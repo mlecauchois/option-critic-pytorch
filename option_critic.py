@@ -7,12 +7,22 @@ import numpy as np
 
 from utils import to_tensor
 
+class GaussianNoise(nn.Module):
+    def __init__(self, device, stddev = 0.05):
+        super().__init__()
+        self.device = "cpu"
+        self.stddev = stddev
+
+    def forward(self, input):
+        return input + torch.autograd.Variable(torch.randn(input.size()).to(self.device) * self.stddev)
 
 class OptionCriticConv(nn.Module):
     def __init__(self,
                 in_features,
                 num_actions,
                 num_options,
+                bottleneck_size=512,
+                noise=0,
                 temperature=1.0,
                 eps_start=1.0,
                 eps_min=0.1,
@@ -26,6 +36,8 @@ class OptionCriticConv(nn.Module):
         self.in_channels = in_features
         self.num_actions = num_actions
         self.num_options = num_options
+        self.bottleneck_size = bottleneck_size
+        self.noise = noise
         self.magic_number = 7 * 7 * 64
         self.device = device
         self.testing = testing
@@ -49,7 +61,9 @@ class OptionCriticConv(nn.Module):
             nn.ReLU()
         )
 
-        self.Q            = nn.Linear(512, num_options)                 # Policy-Over-Options
+        self.gaussian_noise = GaussianNoise(device=self.device, stddev=self.noise)
+        self.Q_bottleneck = nn.Linear(512, self.bottleneck_size)
+        self.Q            = nn.Linear(self.bottleneck_size, num_options)                 # Policy-Over-Options
         self.terminations = nn.Linear(512, num_options)                 # Option-Termination
         self.options_W = nn.Parameter(torch.zeros(num_options, 512, num_actions))
         self.options_b = nn.Parameter(torch.zeros(num_options, num_actions))
@@ -65,7 +79,7 @@ class OptionCriticConv(nn.Module):
         return state
 
     def get_Q(self, state):
-        return self.Q(state)
+        return self.Q(self.gaussian_noise.forward(self.Q_bottleneck.forward(state)))
     
     def predict_option_termination(self, state, current_option):
         termination = self.terminations(state)[:, current_option].sigmoid()
@@ -108,6 +122,8 @@ class OptionCriticFeatures(nn.Module):
                 in_features,
                 num_actions,
                 num_options,
+                bottleneck_size=64,
+                noise=0,
                 temperature=1.0,
                 eps_start=1.0,
                 eps_min=0.1,
@@ -121,6 +137,8 @@ class OptionCriticFeatures(nn.Module):
         self.in_features = in_features
         self.num_actions = num_actions
         self.num_options = num_options
+        self.bottleneck_size = bottleneck_size
+        self.noise = noise
         self.device = device
         self.testing = testing
 
@@ -138,7 +156,9 @@ class OptionCriticFeatures(nn.Module):
             nn.ReLU()
         )
 
-        self.Q            = nn.Linear(64, num_options)                 # Policy-Over-Options
+        self.gaussian_noise = GaussianNoise(device=self.device, stddev=self.noise)
+        self.Q_bottleneck = nn.Linear(64, self.bottleneck_size)
+        self.Q            = nn.Linear(self.bottleneck_size, num_options)                 # Policy-Over-Options
         self.terminations = nn.Linear(64, num_options)                 # Option-Termination
         self.options_W = nn.Parameter(torch.zeros(num_options, 64, num_actions))
         self.options_b = nn.Parameter(torch.zeros(num_options, num_actions))
@@ -154,7 +174,7 @@ class OptionCriticFeatures(nn.Module):
         return state
 
     def get_Q(self, state):
-        return self.Q(state)
+        return self.Q(self.gaussian_noise.forward(self.Q_bottleneck.forward(state)))
     
     def predict_option_termination(self, state, current_option):
         termination = self.terminations(state)[:, current_option].sigmoid()

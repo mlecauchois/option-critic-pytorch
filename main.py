@@ -29,6 +29,8 @@ parser.add_argument('--update-frequency', type=int, default=4, help=('Number of 
 parser.add_argument('--termination-reg', type=float, default=0.01, help=('Regularization to decrease termination prob.'))
 parser.add_argument('--entropy-reg', type=float, default=0.01, help=('Regularization to increase policy entropy.'))
 parser.add_argument('--num-options', type=int, default=2, help=('Number of options to create.'))
+parser.add_argument('--bottleneck-size', type=int, default=64, help=('Bottleneck size of policy over options.'))
+parser.add_argument('--noise', type=float, default=0, help=('Noise magnitude for bottleneck.'))
 parser.add_argument('--temp', type=float, default=1, help='Action distribution softmax tempurature param.')
 
 parser.add_argument('--max_steps_ep', type=int, default=18000, help='number of maximum steps per episode.')
@@ -48,6 +50,8 @@ def run(args):
         in_features=env.observation_space.shape[0],
         num_actions=env.action_space.n,
         num_options=args.num_options,
+        bottleneck_size=args.bottleneck_size,
+        noise=args.noise,
         temperature=args.temp,
         eps_start=args.epsilon_start,
         eps_min=args.epsilon_min,
