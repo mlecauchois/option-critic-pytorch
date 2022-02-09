@@ -62,7 +62,7 @@ class OptionCriticConv(nn.Module):
         )
 
         self.gaussian_noise = GaussianNoise(device=self.device, stddev=self.noise)
-        self.Q_bottleneck = nn.Linear(512, self.bottleneck_size)
+        self.Q_bottleneck = nn.Sequential(nn.Linear(512, self.bottleneck_size), nn.Tanh())
         self.Q            = nn.Linear(self.bottleneck_size, num_options)                 # Policy-Over-Options
         self.terminations = nn.Linear(512, num_options)                 # Option-Termination
         self.options_W = nn.Parameter(torch.zeros(num_options, 512, num_actions))
@@ -157,7 +157,7 @@ class OptionCriticFeatures(nn.Module):
         )
 
         self.gaussian_noise = GaussianNoise(device=self.device, stddev=self.noise)
-        self.Q_bottleneck = nn.Linear(64, self.bottleneck_size)
+        self.Q_bottleneck = nn.Sequential(nn.Linear(64, self.bottleneck_size), nn.Tanh())
         self.Q            = nn.Linear(self.bottleneck_size, num_options)                 # Policy-Over-Options
         self.terminations = nn.Linear(64, num_options)                 # Option-Termination
         self.options_W = nn.Parameter(torch.zeros(num_options, 64, num_actions))

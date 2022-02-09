@@ -69,7 +69,7 @@ def run(args):
     env.seed(args.seed)
 
     buffer = ReplayBuffer(capacity=args.max_history, seed=args.seed)
-    logger = Logger(logdir=args.logdir, run_name=f"{OptionCriticFeatures.__name__}-{args.env}-{args.exp}-{time.ctime()}")
+    logger = Logger(logdir=args.logdir, run_name=f"{OptionCriticFeatures.__name__}-{args.env}-{args.exp}-seed-{args.seed}-noise-{args.noise}-bottleneck-{args.bottleneck_size}-{time.ctime()}")
 
     steps = 0 ;
     if args.switch_goal: print(f"Current goal {env.goal}")
@@ -88,14 +88,14 @@ def run(args):
         if args.switch_goal and logger.n_eps == 1000:
             torch.save({'model_params': option_critic.state_dict(),
                         'goal_state': env.goal},
-                        'models/option_critic_{args.seed}_1k')
+                        f'models/option_critic_{args.seed}_{args.noise}_{args.bottleneck_size}_1k')
             env.switch_goal()
             print(f"New goal {env.goal}")
 
         if args.switch_goal and logger.n_eps > 2000:
             torch.save({'model_params': option_critic.state_dict(),
                         'goal_state': env.goal},
-                        'models/option_critic_{args.seed}_2k')
+                        f'models/option_critic_{args.seed}_{args.noise}_{args.bottleneck_size}_2k')
             break
 
         done = False ; ep_steps = 0 ; option_termination = True ; curr_op_len = 0
